@@ -25,10 +25,12 @@
     "npm": "^7.0.0"
   },
   "scripts": {
+    "build": "npm run prod",
     "dev": "rollup --config --environment BUILD:development",
     "prod": "rollup --config --environment BUILD:production",
     "clean:build": "rm -rf packages/*/dist",
-    "test": "jest"
+    "test": "jest",
+    "prepare": "npm run build"
   },
   "workspaces": [
     "packages/*"
