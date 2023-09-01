@@ -106,9 +106,10 @@ export class LockPlugin extends BasePlugin implements IPlugin {
 
     if (view === 'CalendarDay') {
       const dateFrom = this.picker.datePicked.length ? this.picker.datePicked[0] : null;
-
       if (this.testFilter(date)) {
         target.classList.add('locked');
+        target.setAttribute('data-tooltip', 'Already booked')
+        target.style.pointerEvents = 'all';
         return;
       }
 
@@ -139,17 +140,20 @@ export class LockPlugin extends BasePlugin implements IPlugin {
 
           if (lockedInPrevDays && lockedInNextDays) {
             target.classList.add('not-available');
+            target.setAttribute('data-tooltip', 'Checkin Unavailable')
+            target.style.pointerEvents = 'all';
           }
         }
 
         if (this.rangeIsNotAvailable(date, dateFrom)) {
           target.classList.add('not-available');
+          target.setAttribute('data-tooltip', 'Checkin Unavailable')
+          target.style.pointerEvents = 'all';
         }
       }
-
-      if (this.dateIsNotAvailable(date, dateFrom)) {
-        target.classList.add('not-available');
-      }
+      // if (this.dateIsNotAvailable(date, dateFrom)) {
+      //   target.classList.add('not-available');
+      // }
     }
 
     if (this.options.presets && view === 'PresetPluginButton') {

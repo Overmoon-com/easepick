@@ -10,6 +10,8 @@ export interface IRangeConfig extends IBaseConfig {
   delimiter?: string;
   tooltip?: boolean;
   tooltipNumber?: (num: number) => number;
+  tooltipDataAttribute?: string,
+  tooltipOnClick?: (date: DateTime) => string;
   locale?: {
     zero?: string;
     one?: string;

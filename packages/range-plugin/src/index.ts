@@ -17,6 +17,8 @@ export class RangePlugin extends BasePlugin implements IPlugin {
     onShow: this.onShow.bind(this),
     onMouseEnter: this.onMouseEnter.bind(this),
     onMouseLeave: this.onMouseLeave.bind(this),
+    onMouseOver: this.onMouseOver.bind(this),
+    onMouseOut: this.onMouseOut.bind(this),
     onClickCalendarDay: this.onClickCalendarDay.bind(this),
     onClickApplyButton: this.onClickApplyButton.bind(this),
     parseValues: this.parseValues.bind(this),
@@ -35,6 +37,8 @@ export class RangePlugin extends BasePlugin implements IPlugin {
     tooltipNumber: (num: number) => {
       return num;
     },
+    tooltipDataAttribute: null,
+    tooltipOnClick: null,
     locale: {
       zero: '',
       one: 'day',
@@ -144,6 +148,8 @@ export class RangePlugin extends BasePlugin implements IPlugin {
     this.picker.on('show', this.binds.onShow);
     this.picker.on('mouseenter', this.binds.onMouseEnter, true);
     this.picker.on('mouseleave', this.binds.onMouseLeave, true);
+    this.picker.on('mouseover', this.binds.onMouseOver, true);
+    this.picker.on('mouseout', this.binds.onMouseOut, true);
 
     this.checkIntlPluralLocales();
   }
@@ -347,6 +353,13 @@ export class RangePlugin extends BasePlugin implements IPlugin {
       const start = datePicked.length ? this.picker.datePicked[0] : this.getStartDate();
       const end = datePicked.length ? this.picker.datePicked[1] : this.getEndDate();
 
+      if (this.options.tooltipDataAttribute && this.options.tooltipOnClick) {
+        const value = this.options.tooltipOnClick(date);
+        if (value) {
+          target.setAttribute(this.options.tooltipDataAttribute, value);
+        }
+      }
+
       if (start && start.isSame(date, 'day')) {
         target.classList.add('start');
       }
@@ -492,6 +505,10 @@ export class RangePlugin extends BasePlugin implements IPlugin {
           const date = new DateTime(d.dataset.time);
           const dayView = this.picker.Calendar.getCalendarDayView(date);
 
+          if (d.classList.contains('locked')) {
+            d.removeAttribute('style');
+          }
+
           if (date.isBetween(date1, date2)) {
             dayView.classList.add('in-range');
           }
@@ -513,10 +530,47 @@ export class RangePlugin extends BasePlugin implements IPlugin {
           const diff = this.options.tooltipNumber(date2.diff(date1, 'day') + 1);
 
           if (diff > 0) {
-            const pluralKey = new Intl.PluralRules(this.picker.options.lang).select(diff);
-            const text = `${diff} ${this.options.locale[pluralKey]}`;
-
-            this.showTooltip(element, text);
+            if (element.getAttribute('data-min-date-range') === '1' && this.options.tooltipDataAttribute) {
+              const dataAttribute = element.getAttribute(this.options.tooltipDataAttribute);
+              this.showTooltip(element, dataAttribute);
+            } else if (!element.getAttribute('data-tooltip')) {
+              const pluralKey = new Intl.PluralRules(this.picker.options.lang).select(diff);
+              const text = `${diff} ${this.options.locale[pluralKey]}`;
+              this.showTooltip(element, text);
+            }
+          } else if (this.options.tooltipDataAttribute) {
+            const attributeValue = element.getAttribute(this.options.tooltipDataAttribute);
+            element.style.pointerEvents = 'all';
+            this.showTooltip(element, attributeValue);
+            const numberMatch = attributeValue.match(/\d+/)
+            if (numberMatch) {
+              const inverseMatch = attributeValue.match(/[^0-9]+/g)
+              if (inverseMatch && inverseMatch.length) {
+                const newAttributeValue = `${numberMatch[0]}${inverseMatch[0]}`
+                let currentNextElement = element, currentPreviousElement = element;
+                for (let i = 0; i < parseInt(numberMatch[0]) - 1; i++) {
+                  const nextElement = currentNextElement.nextElementSibling as HTMLElement
+                  if (nextElement) {
+                    nextElement.setAttribute('data-min-date-range', '1');
+                    nextElement.setAttribute(this.options.tooltipDataAttribute, newAttributeValue);
+                    currentNextElement = nextElement
+                  }
+                  const previousElement = currentPreviousElement.previousElementSibling as HTMLElement
+                  if (previousElement) {
+                    previousElement.setAttribute('data-min-date-range', '1');
+                    previousElement.setAttribute(this.options.tooltipDataAttribute, newAttributeValue);
+                    currentPreviousElement = previousElement
+                  }
+                }
+                let currentElement = element;
+                while (currentElement && !currentElement.classList.contains('not-available') && !currentElement.classList.contains('locked')) {
+                  currentElement.style.pointerEvents = 'all';
+                  currentElement = currentElement.nextElementSibling as HTMLElement
+                }
+              }
+            }
+          } else if (element.getAttribute('data-tooltip')) {
+            this.showTooltip(element, element.getAttribute('data-tooltip'));
           } else {
             this.hideTooltip();
           }
@@ -543,8 +597,46 @@ export class RangePlugin extends BasePlugin implements IPlugin {
     }
   }
 
+  /**
+ * Handle `mouseover` event
+ * 
+ * @param event 
+ */
+  private onMouseOver(event) {
+    const target = event.target;
+
+    if (target instanceof HTMLElement) {
+      const element = target.closest('.unit');
+
+      if (!(element instanceof HTMLElement)) return;
+
+      if (this.picker.isCalendarDay(element) && element.getAttribute('data-tooltip')) {
+        this.showTooltip(element, element.getAttribute('data-tooltip'));
+      }
+    }
+  }
+
+  /**
+* Handle `mouseout` event
+* 
+* @param event 
+*/
+  private onMouseOut(event) {
+    const target = event.target;
+
+    if (target instanceof HTMLElement) {
+      const element = target.closest('.unit');
+
+      if (!(element instanceof HTMLElement)) return;
+
+      if (this.picker.isCalendarDay(element) && element.getAttribute('data-tooltip')) {
+        this.hideTooltip();
+      }
+    }
+  }
+
   private onClickCalendarDay(element: HTMLElement) {
-    if (this.picker.isCalendarDay(element)) {
+    if (this.picker.isCalendarDay(element) && element.getAttribute('data-min-date-range') !== '1' && !element.getAttribute('data-tooltip')) {
 
       if (this.picker.datePicked.length === 2) {
         this.picker.datePicked.length = 0;
@@ -582,7 +674,7 @@ export class RangePlugin extends BasePlugin implements IPlugin {
         this.picker.renderAll();
       }
 
-      if (this.picker.datePicked.length === 2) {
+      if (this.picker.datePicked.length === 2 && this.picker.datePicked[0].getTime() !== this.picker.datePicked[1].getTime()) {
         if (this.picker.options.autoApply) {
           this.setDateRange(this.picker.datePicked[0], this.picker.datePicked[1]);
 
