@@ -106,7 +106,7 @@ export class LockPlugin extends BasePlugin implements IPlugin {
 
     if (view === 'CalendarDay') {
       const dateFrom = this.picker.datePicked.length ? this.picker.datePicked[0] : null;
-      if (this.testFilter(date)) {
+      if (date && this.testFilter(date) && this.options.minDate instanceof DateTime && date.isAfter(this.options.minDate)) {
         target.classList.add('locked');
         target.setAttribute('data-tooltip', 'Already booked')
         target.style.pointerEvents = 'all';
