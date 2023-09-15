@@ -182,6 +182,7 @@ export class Core {
     if (this.isCalendarHeaderButton(element)) {
       if (element.classList.contains('next-button')) {
         this.calendars[0].add(1, 'month');
+        this.trigger('onClickNextMonth', { date: this.calendars[0].toJSDate() })
       } else {
         this.calendars[0].subtract(1, 'month');
       }
