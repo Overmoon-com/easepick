@@ -287,6 +287,7 @@ export class Core {
     //this.ui.container.style.position = 'absolute';
     this.ui.container.style.top = `${top}px`;
     this.ui.container.style.left = `${left}px`;
+    this.ui.container.style.overflow = 'visible';
     this.ui.container.classList.add('show');
 
     this.trigger('show', { target: target });
@@ -296,6 +297,7 @@ export class Core {
    * Hide the picker
    */
   public hide(): void {
+    this.ui.container.style.overflow = 'hidden';
     this.ui.container.classList.remove('show');
 
     this.datePicked.length = 0;

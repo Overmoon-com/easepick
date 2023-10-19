@@ -19,6 +19,7 @@ export class LockPlugin extends BasePlugin implements IPlugin {
     selectBackward: null,
     presets: true,
     inseparable: false,
+    checkInUnavailableDates: null,
     filter: null,
   };
 
@@ -138,7 +139,7 @@ export class LockPlugin extends BasePlugin implements IPlugin {
             date2.subtract(1, 'day');
           }
 
-          if (lockedInPrevDays && lockedInNextDays) {
+          if (lockedInPrevDays && lockedInNextDays || (this.options.checkInUnavailableDates && this.options.checkInUnavailableDates.has(date.format('YYYY-MM-DD')))) {
             target.classList.add('not-available');
             target.setAttribute('data-tooltip', 'Checkin Unavailable')
             target.style.pointerEvents = 'all';
@@ -151,9 +152,9 @@ export class LockPlugin extends BasePlugin implements IPlugin {
           target.style.pointerEvents = 'all';
         }
       }
-      // if (this.dateIsNotAvailable(date, dateFrom)) {
-      //   target.classList.add('not-available');
-      // }
+      if (this.lockMinDate(date)) {
+        target.classList.add('not-available');
+      }
     }
 
     if (this.options.presets && view === 'PresetPluginButton') {

@@ -542,20 +542,33 @@ export class RangePlugin extends BasePlugin implements IPlugin {
             const attributeValue = element.getAttribute(this.options.tooltipDataAttribute);
             element.style.pointerEvents = 'all';
             this.showTooltip(element, attributeValue);
-            const numberMatch = attributeValue.match(/\d+/)
+            const numberMatch = attributeValue && attributeValue.match(/\d+/)
             if (numberMatch) {
               const inverseMatch = attributeValue.match(/[^0-9]+/g)
               if (inverseMatch && inverseMatch.length) {
                 const newAttributeValue = `${numberMatch[0]}${inverseMatch[0]}`
                 let currentNextElement = element, currentPreviousElement = element;
-                for (let i = 0; i < parseInt(numberMatch[0]) - 1; i++) {
-                  const nextElement = currentNextElement.nextElementSibling as HTMLElement
+                const length = parseInt(numberMatch[0]) - 1
+                for (let i = 0; i < length; i++) {
+                  let nextElement = currentNextElement.nextElementSibling as HTMLElement
+                  if (!nextElement && i < length) {
+                    const nextCalendarElement = currentNextElement.parentElement?.parentElement?.nextElementSibling?.querySelector('.days-grid') as HTMLElement
+                    if (nextCalendarElement) {
+                      nextElement = nextCalendarElement.querySelector('div.day.unit') as HTMLElement
+                    }
+                  }
                   if (nextElement) {
                     nextElement.setAttribute('data-min-date-range', '1');
                     nextElement.setAttribute(this.options.tooltipDataAttribute, newAttributeValue);
                     currentNextElement = nextElement
                   }
-                  const previousElement = currentPreviousElement.previousElementSibling as HTMLElement
+                  let previousElement = currentPreviousElement.previousElementSibling as HTMLElement
+                  if ((!previousElement || previousElement.classList.contains('offset')) && i < length) {
+                    const previousCalendarElement = currentNextElement.parentElement?.parentElement?.previousElementSibling?.querySelector('.days-grid') as HTMLElement
+                    if (previousCalendarElement) {
+                      previousElement = previousCalendarElement.querySelector('div.day.unit:last-child') as HTMLElement
+                    }
+                  }
                   if (previousElement) {
                     previousElement.setAttribute('data-min-date-range', '1');
                     previousElement.setAttribute(this.options.tooltipDataAttribute, newAttributeValue);

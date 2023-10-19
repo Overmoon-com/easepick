@@ -11,6 +11,7 @@ export interface ILockConfig extends IBaseConfig {
   selectBackward?: boolean;
   presets?: boolean;
   inseparable?: boolean;
+  checkInUnavailableDates?: Set<string>;
   filter?: (date: DateTime | DateTime[], picked: DateTime[]) => boolean;
 }
 
