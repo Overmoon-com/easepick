@@ -23,6 +23,7 @@ export class Core {
     doc: document,
     css: [],
     element: null,
+    alignToElement: null,
     firstDay: 1,
     grid: 1,
     calendars: 1,
@@ -466,6 +467,10 @@ export class Core {
       this.options.element = this.options.doc.querySelector(this.options.element) as HTMLElement;
     }
 
+    if (!(this.options.alignToElement instanceof HTMLElement)) {
+      this.options.alignToElement = this.options.doc.querySelector(this.options.alignToElement) as HTMLElement;
+    }
+
     if (typeof this.options.documentClick === 'function') {
       document.addEventListener('click', this.options.documentClick, true);
     }
@@ -530,7 +535,13 @@ export class Core {
     this.ui.container.classList.remove('calc');
 
     let top = rect.bottom - wrapper.bottom;
-    let left = rect.left - wrapper.left;
+    let left;
+    if (this.options.alignToElement) {
+      const alignToElementRect = (this.options.alignToElement as HTMLElement).getBoundingClientRect();
+      left = alignToElementRect.width - container.width - rect.width;
+    } else {
+      left = rect.left - wrapper.left;
+    }
 
     if (typeof window !== 'undefined') {
       if (window.innerHeight < top + container.height

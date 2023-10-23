@@ -16,6 +16,7 @@ export interface IPickerElements {
 
 export interface IPickerConfig {
   element: HTMLElement | string;
+  alignToElement?: HTMLElement | string;
   doc?: Document | ShadowRoot;
   css?: string | string[] | ((picker: Core) => void);
   firstDay?: number;
