@@ -794,9 +794,27 @@ export class RangePlugin extends BasePlugin implements IPlugin {
    */
   private showTooltip(element: HTMLElement, text: string) {
     if (this.options.isMobileDevice) {
-      const components = text.split('minimum');
-      if (components && components.length) {
-        text = `${components[0]}<br />minimum`;
+      const strings = text.split(/\s+/);
+      if (strings && strings.length) {
+        let newText = '';
+        let currentText = '';
+        for (const string of strings) {
+          if (currentText.length + string.length > 8) {
+            newText += `${currentText}<br/>`;
+            currentText = '';
+          }
+          if (currentText.length < 9) {
+            if (!currentText.length) {
+              currentText = string;
+            } else {
+              currentText += ` ${string}`;
+            }
+          }
+        }
+        if (currentText.length) {
+          newText += currentText;
+        }
+        text = newText;
       }
     }
     this.tooltipElement.style.visibility = 'visible';
