@@ -182,8 +182,16 @@ export class Core {
   public onClickHeaderButton(element: HTMLElement) {
     if (this.isCalendarHeaderButton(element)) {
       if (element.classList.contains('next-button')) {
+        const calendars = this.ui.container.querySelectorAll('.calendar');
+        let element;
+        for (const calendar of calendars) {
+          element = calendar.querySelector('.selected') as HTMLElement;
+          if (element) {
+            break;
+          }
+        }
         this.calendars[0].add(1, 'month');
-        this.trigger('onClickNextMonth', { date: this.calendars[0].toJSDate() })
+        this.trigger('onClickNextMonth', { date: this.calendars[0].toJSDate(), target: element })
       } else {
         this.calendars[0].subtract(1, 'month');
       }

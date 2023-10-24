@@ -10,7 +10,7 @@ export interface IRangeConfig extends IBaseConfig {
   delimiter?: string;
   tooltip?: boolean;
   tooltipNumber?: (num: number) => number;
-  tooltipDataAttribute?: string,
+  tooltipDataAttribute?: string;
   tooltipOnClick?: (date: DateTime) => string | null;
   locale?: {
     zero?: string;
@@ -20,6 +20,8 @@ export interface IRangeConfig extends IBaseConfig {
     many?: string;
     other?: string;
   }
+  nextMonthData?: Record<string, string | number | HTMLElement> | null;
+  isMobileDevice?: boolean;
   documentClick?: boolean | (() => void);
 }
 

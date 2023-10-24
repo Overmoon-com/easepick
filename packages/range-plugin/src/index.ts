@@ -19,6 +19,7 @@ export class RangePlugin extends BasePlugin implements IPlugin {
     onMouseLeave: this.onMouseLeave.bind(this),
     onMouseOver: this.onMouseOver.bind(this),
     onMouseOut: this.onMouseOut.bind(this),
+    onClickNextMonth: this.onClickNextMonth.bind(this),
     onClickCalendarDay: this.onClickCalendarDay.bind(this),
     onClickApplyButton: this.onClickApplyButton.bind(this),
     parseValues: this.parseValues.bind(this),
@@ -47,6 +48,8 @@ export class RangePlugin extends BasePlugin implements IPlugin {
       many: '',
       other: 'days',
     },
+    nextMonthData: null,
+    isMobileDevice: false,
     documentClick: this.hidePicker.bind(this),
   };
 
@@ -150,6 +153,7 @@ export class RangePlugin extends BasePlugin implements IPlugin {
     this.picker.on('mouseleave', this.binds.onMouseLeave, true);
     this.picker.on('mouseover', this.binds.onMouseOver, true);
     this.picker.on('mouseout', this.binds.onMouseOut, true);
+    this.picker.on('onClickNextMonth', this.binds.onClickNextMonth);
 
     this.checkIntlPluralLocales();
   }
@@ -338,6 +342,44 @@ export class RangePlugin extends BasePlugin implements IPlugin {
    * 
    * @param event 
    */
+  private onClickNextMonth(event: CustomEvent) {
+    if (this.options.tooltipDataAttribute && this.options.isMobileDevice) {
+      const { target }: IEventDetail = event.detail;
+      const attributeValue = target && target.getAttribute(this.options.tooltipDataAttribute);
+      const numberMatch = attributeValue && attributeValue.match(/\d+/)
+      if (numberMatch) {
+        let currentNextElement = target;
+        let nextMonthCount = 1;
+        this.options.nextMonthData = { minNights: attributeValue };
+        const length = parseInt(numberMatch[0]) - 1
+        for (let i = 0; i < length; i++) {
+          const nextElement = currentNextElement.nextElementSibling as HTMLElement
+          if (!nextElement) {
+            nextMonthCount++;
+          }
+          if (nextElement) {
+            currentNextElement = nextElement;
+          }
+        }
+        if (nextMonthCount > 1) {
+          this.options.nextMonthData.length = nextMonthCount - 1;
+        } else {
+          this.options.nextMonthData = null;
+        }
+      } else {
+        this.options.nextMonthData = null;
+      }
+    } else {
+      this.options.nextMonthData = null;
+    }
+  }
+
+  /**
+   * Function `view` event
+   * Adds HTML layout of current plugin to the picker layout
+   * 
+   * @param event 
+   */
   private onView(event: CustomEvent) {
     const { view, target }: IEventDetail = event.detail;
 
@@ -345,6 +387,67 @@ export class RangePlugin extends BasePlugin implements IPlugin {
       this.tooltipElement = document.createElement('span');
       this.tooltipElement.className = 'range-plugin-tooltip';
       target.appendChild(this.tooltipElement);
+      const calendars = target.querySelectorAll('.calendar');
+      for (const calendar of calendars) {
+        if (this.options.nextMonthData) {
+          const days = calendar.querySelectorAll('.day');
+          const length = this.options.nextMonthData.length as number;
+          for (let i = 0; i < length; i++) {
+            const day = days[i];
+            if (day) {
+              day.setAttribute('data-min-date-range', '1');
+              day.setAttribute(this.options.tooltipDataAttribute, this.options.nextMonthData.minNights as string);
+            }
+          }   
+        }
+        const element = calendar.querySelector('.selected') as HTMLElement;
+        if (element) {
+          const attributeValue = element.getAttribute(this.options.tooltipDataAttribute);
+          element.style.pointerEvents = 'all';
+          this.showTooltip(element, attributeValue);
+          const numberMatch = attributeValue && attributeValue.match(/\d+/)
+          if (numberMatch) {
+            const inverseMatch = attributeValue.match(/[^0-9]+/g)
+            if (inverseMatch && inverseMatch.length) {
+              const newAttributeValue = `${numberMatch[0]}${inverseMatch[0]}`
+              let currentNextElement = element, currentPreviousElement = element;
+              const length = parseInt(numberMatch[0]) - 1
+              for (let i = 0; i < length; i++) {
+                let nextElement = currentNextElement.nextElementSibling as HTMLElement
+                if (!nextElement && i < length) {
+                  const nextCalendarElement = currentNextElement.parentElement?.parentElement?.nextElementSibling?.querySelector('.days-grid') as HTMLElement
+                  if (nextCalendarElement) {
+                    nextElement = nextCalendarElement.querySelector('div.day.unit') as HTMLElement
+                  }
+                }
+                if (nextElement) {
+                  nextElement.setAttribute('data-min-date-range', '1');
+                  nextElement.setAttribute(this.options.tooltipDataAttribute, newAttributeValue);
+                  currentNextElement = nextElement
+                }
+                let previousElement = currentPreviousElement.previousElementSibling as HTMLElement
+                if ((!previousElement || previousElement.classList.contains('offset')) && i < length) {
+                  const previousCalendarElement = currentNextElement.parentElement?.parentElement?.previousElementSibling?.querySelector('.days-grid') as HTMLElement
+                  if (previousCalendarElement) {
+                    previousElement = previousCalendarElement.querySelector('div.day.unit:last-child') as HTMLElement
+                  }
+                }
+                if (previousElement) {
+                  previousElement.setAttribute('data-min-date-range', '1');
+                  previousElement.setAttribute(this.options.tooltipDataAttribute, newAttributeValue);
+                  currentPreviousElement = previousElement
+                }
+              }
+              let currentElement = element;
+              while (currentElement && !currentElement.classList.contains('not-available') && !currentElement.classList.contains('locked')) {
+                currentElement.style.pointerEvents = 'all';
+                currentElement = currentElement.nextElementSibling as HTMLElement
+              }
+            }
+          }
+          break;
+        }
+      }
     }
 
     if (view === 'CalendarDay') {
@@ -538,53 +641,9 @@ export class RangePlugin extends BasePlugin implements IPlugin {
               const text = `${diff} ${this.options.locale[pluralKey]}`;
               this.showTooltip(element, text);
             }
-          } else if (this.options.tooltipDataAttribute) {
-            const attributeValue = element.getAttribute(this.options.tooltipDataAttribute);
-            element.style.pointerEvents = 'all';
-            this.showTooltip(element, attributeValue);
-            const numberMatch = attributeValue && attributeValue.match(/\d+/)
-            if (numberMatch) {
-              const inverseMatch = attributeValue.match(/[^0-9]+/g)
-              if (inverseMatch && inverseMatch.length) {
-                const newAttributeValue = `${numberMatch[0]}${inverseMatch[0]}`
-                let currentNextElement = element, currentPreviousElement = element;
-                const length = parseInt(numberMatch[0]) - 1
-                for (let i = 0; i < length; i++) {
-                  let nextElement = currentNextElement.nextElementSibling as HTMLElement
-                  if (!nextElement && i < length) {
-                    const nextCalendarElement = currentNextElement.parentElement?.parentElement?.nextElementSibling?.querySelector('.days-grid') as HTMLElement
-                    if (nextCalendarElement) {
-                      nextElement = nextCalendarElement.querySelector('div.day.unit') as HTMLElement
-                    }
-                  }
-                  if (nextElement) {
-                    nextElement.setAttribute('data-min-date-range', '1');
-                    nextElement.setAttribute(this.options.tooltipDataAttribute, newAttributeValue);
-                    currentNextElement = nextElement
-                  }
-                  let previousElement = currentPreviousElement.previousElementSibling as HTMLElement
-                  if ((!previousElement || previousElement.classList.contains('offset')) && i < length) {
-                    const previousCalendarElement = currentNextElement.parentElement?.parentElement?.previousElementSibling?.querySelector('.days-grid') as HTMLElement
-                    if (previousCalendarElement) {
-                      previousElement = previousCalendarElement.querySelector('div.day.unit:last-child') as HTMLElement
-                    }
-                  }
-                  if (previousElement) {
-                    previousElement.setAttribute('data-min-date-range', '1');
-                    previousElement.setAttribute(this.options.tooltipDataAttribute, newAttributeValue);
-                    currentPreviousElement = previousElement
-                  }
-                }
-                let currentElement = element;
-                while (currentElement && !currentElement.classList.contains('not-available') && !currentElement.classList.contains('locked')) {
-                  currentElement.style.pointerEvents = 'all';
-                  currentElement = currentElement.nextElementSibling as HTMLElement
-                }
-              }
-            }
           } else if (element.getAttribute('data-tooltip')) {
             this.showTooltip(element, element.getAttribute('data-tooltip'));
-          } else {
+          } else if (!element.classList.contains('selected')) {
             this.hideTooltip();
           }
         }
@@ -734,6 +793,12 @@ export class RangePlugin extends BasePlugin implements IPlugin {
    * @param text 
    */
   private showTooltip(element: HTMLElement, text: string) {
+    if (this.options.isMobileDevice) {
+      const components = text.split('minimum');
+      if (components && components.length) {
+        text = `${components[0]}<br />minimum`;
+      }
+    }
     this.tooltipElement.style.visibility = 'visible';
     this.tooltipElement.innerHTML = text;
 
