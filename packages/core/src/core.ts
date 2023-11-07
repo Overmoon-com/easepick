@@ -194,6 +194,7 @@ export class Core {
         this.trigger('onClickNextMonth', { date: this.calendars[0].toJSDate(), target: element })
       } else {
         this.calendars[0].subtract(1, 'month');
+        this.trigger('onClickPreviousMonth', { date: this.calendars[0].toJSDate(), target: element })
       }
 
       this.renderAll(this.calendars[0]);

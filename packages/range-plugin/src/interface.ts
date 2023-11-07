@@ -3,8 +3,8 @@ import { IBaseConfig } from '@easepick/base-plugin';
 
 export interface IRangeConfig extends IBaseConfig {
   elementEnd?: HTMLElement | string;
-  startDate?: DateTime;
-  endDate?: DateTime;
+  startDate?: DateTime | string;
+  endDate?: DateTime | string;
   repick?: boolean;
   strict?: boolean;
   delimiter?: string;
