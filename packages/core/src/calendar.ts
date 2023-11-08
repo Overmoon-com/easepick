@@ -180,11 +180,13 @@ export default class Calendar {
 
     const prevMonth = document.createElement('button');
     prevMonth.className = 'previous-button unit';
+    prevMonth.ariaLabel = 'Previous month button';
     prevMonth.innerHTML = this.picker.options.locale.previousMonth;
     element.appendChild(prevMonth);
 
     const nextMonth = document.createElement('button');
     nextMonth.className = 'next-button unit';
+    nextMonth.ariaLabel = 'Next month button';
     nextMonth.innerHTML = this.picker.options.locale.nextMonth;
     element.appendChild(nextMonth);
 
